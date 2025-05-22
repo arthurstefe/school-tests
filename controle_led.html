@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de LED por Voz</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    #status { font-weight: bold; color: green; margin-top: 20px; }
+    button { padding: 10px 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Controle de LED com Voz</h1>
+  <button onclick="reconhecer()">🎤 Falar</button>
+  <div id="status">Aguardando comando...</div>
+
+  <script>
+    function reconhecer() {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert("Reconhecimento de voz não é suportado nesse navegador.");
+        return;
+      }
+
+      const reconhecimento = new webkitSpeechRecognition();
+      reconhecimento.lang = 'pt-BR';
+      reconhecimento.interimResults = false;
+      reconhecimento.maxAlternatives = 1;
+
+      document.getElementById("status").innerText = "🎙️ Ouvindo...";
+
+      reconhecimento.onresult = function(event) {
+        const comando = event.results[0][0].transcript.toLowerCase();
+        alert("Comando reconhecido: " + comando);  // ALERTA para ver o que foi reconhecido
+        document.getElementById("status").innerText = "Comando: " + comando;
+
+        // Enviar comando para ESP32 (ajuste o IP se precisar)
+        fetch("http://192.168.4.1/led?comando=" + comando)
+          .then(response => {
+            alert("Comando enviado com sucesso!");
+            console.log("Resposta do ESP32:", response);
+          })
+          .catch(error => {
+            alert("Erro ao enviar comando: " + error);
+            console.error("Erro:", error);
+          });
+      };
+
+      reconhecimento.onerror = function(event) {
+        alert("Erro no reconhecimento: " + event.error);
+        document.getElementById("status").innerText = "Erro no reconhecimento";
+      };
+
+      reconhecimento.onend = function() {
+        console.log("Reconhecimento de voz finalizado.");
+      };
+
+      reconhecimento.start();
+    }
+  </script>
+</body>
+</html>
