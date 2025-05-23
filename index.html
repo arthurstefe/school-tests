@@ -34,7 +34,7 @@
         document.getElementById("status").innerText = "Comando: " + comando;
 
         // Enviar comando para ESP32 (ajuste o IP se precisar)
-        fetch("http://192.168.4.1/led?comando=" + comando)
+        fetch("http://192.168.50.14/led?comando=" + comando)
           .then(response => {
             alert("Comando enviado com sucesso!");
             console.log("Resposta do ESP32:", response);
