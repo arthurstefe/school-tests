@@ -1,23 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Controle de LED por Voz</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-    #status { font-weight: bold; color: green; margin-top: 20px; }
-    button { padding: 10px 20px; font-size: 18px; }
-  </style>
+  <meta charset="UTF-8" />
+  <title>Controle por Voz - LED</title>
 </head>
 <body>
-  <h1>Controle de LED com Voz</h1>
-  <button onclick="reconhecer()">🎤 Falar</button>
-  <div id="status">Aguardando comando...</div>
+  <h1>Controle do LED por Voz</h1>
+  <button onclick="reconhecer()">Falar</button>
+  <p id="status">Status: Aguardando...</p>
 
   <script>
     function reconhecer() {
+      const status = document.getElementById("status");
+
+      // Verifica se o navegador suporta reconhecimento de voz
       if (!('webkitSpeechRecognition' in window)) {
-        alert("Reconhecimento de voz não é suportado nesse navegador.");
+        alert("Este navegador não suporta reconhecimento de voz.");
+        status.innerText = "Status: Navegador não suporta voz";
         return;
       }
 
@@ -26,35 +25,38 @@
       reconhecimento.interimResults = false;
       reconhecimento.maxAlternatives = 1;
 
-      document.getElementById("status").innerText = "🎙️ Ouvindo...";
+      reconhecimento.start();
 
-      reconhecimento.onresult = function(event) {
-        const comando = event.results[0][0].transcript.toLowerCase();
-        alert("Comando reconhecido: " + comando);  // ALERTA para ver o que foi reconhecido
-        document.getElementById("status").innerText = "Comando: " + comando;
+      reconhecimento.onresult = function(evento) {
+        const comando = evento.results[0][0].transcript.toLowerCase();
+        alert("Comando reconhecido: " + comando);
+        status.innerText = "Comando reconhecido: " + comando;
 
-        // Enviar comando para ESP32 (ajuste o IP se precisar)
-        fetch("http://192.168.50.14/led?comando=" + comando)
+        // Constrói a URL com base no comando
+        const ipESP32 = "192.168.51.14"; // Substitua pelo IP real do seu ESP32
+        const url = `http://${ipESP32}/led?comando=${encodeURIComponent(comando)}`;
+
+        // Envia a requisição
+        fetch(url)
           .then(response => {
-            alert("Comando enviado com sucesso!");
-            console.log("Resposta do ESP32:", response);
+            if (response.ok) {
+              alert("Comando enviado com sucesso!");
+              status.innerText = "Comando enviado: " + comando;
+            } else {
+              alert("Falha ao enviar comando (resposta não OK)");
+              status.innerText = "Erro: falha ao enviar comando.";
+            }
           })
-          .catch(error => {
-            alert("Erro ao enviar comando: " + error);
-            console.error("Erro:", error);
+          .catch(erro => {
+            alert("Erro de conexão: " + erro.message);
+            status.innerText = "Erro: " + erro.message;
           });
       };
 
-      reconhecimento.onerror = function(event) {
-        alert("Erro no reconhecimento: " + event.error);
-        document.getElementById("status").innerText = "Erro no reconhecimento";
+      reconhecimento.onerror = function(evento) {
+        alert("Erro no reconhecimento de voz: " + evento.error);
+        status.innerText = "Erro de voz: " + evento.error;
       };
-
-      reconhecimento.onend = function() {
-        console.log("Reconhecimento de voz finalizado.");
-      };
-
-      reconhecimento.start();
     }
   </script>
 </body>
